@@ -18,8 +18,7 @@
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
-    background: radial-gradient(ellipse at 50% 0%, #1E5A40 0%, #143D2B 55%, #0D2B1E 100%);
-    background-attachment: fixed;
+    background: #0D2B1E;
     font-family: Georgia, 'Times New Roman', serif;
     color: #F5EFE0;
     padding: calc(8px + env(safe-area-inset-top)) 12px calc(8px + env(safe-area-inset-bottom));
@@ -119,6 +118,30 @@
     border: none; background: #C1440E; color: #FFF6E8; cursor: pointer;
     box-shadow: 0 3px 0 #7d2b07;
   }
+  /* ---- Fondo de pantalla ---- */
+  #capa-fondo {
+    position: fixed; inset: 0; z-index: -2;
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+    transition: opacity 0.45s ease;
+  }
+  /* Velo oscuro encima de la foto para que los fosforitos y textos se lean siempre */
+  #capa-oscura {
+    position: fixed; inset: 0; z-index: -1;
+    background: linear-gradient(180deg, rgba(13,43,30,0.72) 0%, rgba(13,43,30,0.82) 100%);
+  }
+  #btn-fondo {
+    position: fixed; z-index: 5;
+    right: calc(10px + env(safe-area-inset-right));
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 1px solid rgba(245,239,224,0.4);
+    background: rgba(13,43,30,0.55); color: #F5EFE0;
+    font-size: 24px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+  }
+  #btn-fondo:active { transform: scale(0.92); }
   .oculto { display: none; }
   @keyframes aparecer { from { opacity: 0; transform: scale(1.3); } to { opacity: 1; transform: scale(1); } }
   .nuevo-fosforo { animation: aparecer 0.25s ease-out; transform-origin: center; }
@@ -126,6 +149,9 @@
 </style>
 </head>
 <body>
+<div id="capa-fondo"></div>
+<div id="capa-oscura"></div>
+<button id="btn-fondo" aria-label="Cambiar fondo">→</button>
 <div class="contenedor">
   <header>
     <h1>Truco</h1>
@@ -177,6 +203,24 @@
 
 <script>
 (function () {
+  // ===================================================================
+  //  FONDOS DE PANTALLA
+  //  Para agregar o reemplazar un fondo:
+  //   1. Poné la imagen (vertical, idealmente ~900x1600) en la carpeta "fondos/".
+  //   2. Sumá su nombre de archivo a esta lista.
+  //  El selector toma la lista automáticamente, no hace falta tocar nada más.
+  //
+  //  Quedan 2 lugares libres para cuando tengas las imágenes de reemplazo:
+  //  descomentá las líneas y poné el nombre real del archivo.
+  // ===================================================================
+  const FONDOS = [
+    "fondos/fondo1.jpg",   // barril de cerveza
+    "fondos/fondo2.jpg",   // luz violeta
+    "fondos/fondo3.jpg",   // sombrero / san lorenzo
+    // "fondos/fondo4.jpg",   // <-- reemplazo futuro
+    // "fondos/fondo5.jpg",   // <-- reemplazo futuro
+  ];
+
   // ---- Estado ----
   const CLAVE = "anotador-truco-v1";
   let estado = {
@@ -184,6 +228,7 @@
     nombres: ["Nosotros", "Ellos"],
     puntos: [0, 0],
     historial: [],
+    fondo: 0,
   };
 
   try {
@@ -193,6 +238,38 @@
 
   function guardar() {
     try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) { /* sin espacio */ }
+  }
+
+  // ---- Fondo de pantalla ----
+  const capaFondo = document.getElementById("capa-fondo");
+  const btnFondo = document.getElementById("btn-fondo");
+
+  function aplicarFondo() {
+    if (FONDOS.length === 0) { capaFondo.style.backgroundImage = "none"; return; }
+    if (estado.fondo >= FONDOS.length) estado.fondo = 0;
+    // Pre-carga para evitar parpadeo
+    const img = new Image();
+    img.onload = () => {
+      capaFondo.style.opacity = "0";
+      setTimeout(() => {
+        capaFondo.style.backgroundImage = 'url("' + FONDOS[estado.fondo] + '")';
+        capaFondo.style.opacity = "1";
+      }, 180);
+    };
+    img.src = FONDOS[estado.fondo];
+  }
+
+  function siguienteFondo() {
+    estado.fondo = (estado.fondo + 1) % FONDOS.length;
+    aplicarFondo();
+    guardar();
+  }
+
+  btnFondo.addEventListener("click", siguienteFondo);
+  if (FONDOS.length <= 1) btnFondo.classList.add("oculto");
+  // Aplicar el fondo guardado al abrir (sin transición la primera vez)
+  if (FONDOS.length > 0) {
+    capaFondo.style.backgroundImage = 'url("' + FONDOS[estado.fondo % FONDOS.length] + '")';
   }
 
   // ---- Fósforos ----

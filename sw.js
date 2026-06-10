@@ -1,11 +1,14 @@
-const CACHE = "truco-v2";
+const CACHE = "truco-v3";
 const ARCHIVOS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
-  "./icon-512-maskable.png"
+  "./icon-512-maskable.png",
+  "./fondos/fondo1.jpg",
+  "./fondos/fondo2.jpg",
+  "./fondos/fondo3.jpg"
 ];
 
 self.addEventListener("install", (e) => {

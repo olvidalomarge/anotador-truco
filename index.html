@@ -15,19 +15,24 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; }
   body {
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     background: radial-gradient(ellipse at 50% 0%, #1E5A40 0%, #143D2B 55%, #0D2B1E 100%);
     background-attachment: fixed;
     font-family: Georgia, 'Times New Roman', serif;
     color: #F5EFE0;
-    padding: calc(14px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));
+    padding: calc(8px + env(safe-area-inset-top)) 12px calc(8px + env(safe-area-inset-bottom));
     user-select: none;
     -webkit-user-select: none;
   }
-  .contenedor { max-width: 460px; margin: 0 auto; }
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.06em; }
+  .contenedor {
+    max-width: 460px; margin: 0 auto;
+    height: 100%; min-height: 0;
+    display: flex; flex-direction: column;
+  }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: clamp(4px, 1vh, 10px); flex: 0 0 auto; }
+  h1 { margin: 0; font-size: clamp(17px, 2.6vh, 22px); font-weight: 800; letter-spacing: 0.06em; }
   .objetivos { display: flex; gap: 6px; }
   .objetivos button {
     padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 700;
@@ -35,48 +40,59 @@
     font-family: system-ui, sans-serif; cursor: pointer;
   }
   .objetivos button.activo { background: #F5EFE0; color: #143D2B; }
-  .tablero { display: flex; gap: 10px; }
-  .divisor { width: 1px; background: rgba(245,239,224,0.25); margin: 52px 0 70px; }
-  .equipo { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .tablero { display: flex; gap: 10px; flex: 1 1 auto; min-height: 0; }
+  .divisor { width: 1px; background: rgba(245,239,224,0.25); margin: clamp(28px, 7vh, 52px) 0 clamp(36px, 9vh, 70px); }
+  .equipo { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; min-height: 0; }
   .equipo input {
     width: 100%; background: transparent; border: none;
     border-bottom: 1px solid rgba(245,239,224,0.25);
-    color: #F5EFE0; font-family: Georgia, serif; font-size: 20px; font-weight: 700;
-    text-align: center; padding: 4px 2px; outline: none; letter-spacing: 0.04em;
+    color: #F5EFE0; font-family: Georgia, serif; font-size: clamp(15px, 2.3vh, 20px); font-weight: 700;
+    text-align: center; padding: 2px; outline: none; letter-spacing: 0.04em;
     user-select: text; -webkit-user-select: text;
+    flex: 0 0 auto;
   }
   .puntaje {
-    font-size: 44px; font-weight: 800; line-height: 1.2; margin-top: 4px;
+    font-size: clamp(24px, 5vh, 44px); font-weight: 800; line-height: 1.15; margin-top: 2px;
     text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    flex: 0 0 auto;
   }
-  .cuadros { display: flex; flex-direction: column; gap: 6px; width: min(96px, 26vw); margin-top: 6px; }
+  .cuadros {
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: clamp(3px, 0.8vh, 6px);
+    width: 100%; margin-top: clamp(2px, 0.8vh, 6px);
+  }
   .cuadro {
-    aspect-ratio: 1; border-radius: 10px; background: rgba(0,0,0,0.22);
-    box-shadow: inset 0 1px 4px rgba(0,0,0,0.35); padding: 4px;
+    flex: 1 1 0; min-height: 0;
+    aspect-ratio: 1; width: auto;
+    max-width: min(96px, 26vw); max-height: min(96px, 26vw);
+    border-radius: 10px; background: rgba(0,0,0,0.22);
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.35); padding: 3px;
   }
   .cuadro svg { width: 100%; height: 100%; display: block; }
   .sep-buenas {
-    display: flex; align-items: center; gap: 6px; margin: 8px 0 2px;
-    color: rgba(245,239,224,0.55); font-size: 10px; letter-spacing: 0.18em;
+    flex: 0 0 auto; width: min(96px, 26vw);
+    display: flex; align-items: center; gap: 6px; margin: 1px 0;
+    color: rgba(245,239,224,0.55); font-size: clamp(8px, 1.2vh, 10px); letter-spacing: 0.18em;
     text-transform: uppercase; font-family: system-ui, sans-serif;
   }
   .sep-buenas::before, .sep-buenas::after { content: ""; flex: 1; height: 1px; background: rgba(245,239,224,0.3); }
-  .controles { display: flex; gap: 8px; margin-top: 14px; width: 100%; justify-content: center; }
+  .controles { display: flex; gap: 8px; margin-top: clamp(6px, 1.4vh, 14px); width: 100%; justify-content: center; flex: 0 0 auto; }
   .btn-menos {
-    width: 48px; height: 56px; border-radius: 12px;
+    width: clamp(42px, 11vw, 48px); height: clamp(44px, 6.5vh, 56px); border-radius: 12px;
     border: 1px solid rgba(245,239,224,0.3); background: rgba(0,0,0,0.25);
     color: #F5EFE0; font-size: 22px; cursor: pointer;
   }
   .btn-mas {
-    flex: 1; max-width: 110px; height: 56px; border-radius: 12px; border: none;
-    background: #C1440E; color: #FFF6E8; font-size: 24px; font-weight: 800;
+    flex: 1; max-width: 110px; height: clamp(44px, 6.5vh, 56px); border-radius: 12px; border: none;
+    background: #C1440E; color: #FFF6E8; font-size: clamp(20px, 3vh, 24px); font-weight: 800;
     box-shadow: 0 3px 0 #7d2b07; cursor: pointer; font-family: Georgia, serif;
   }
   .btn-mas:active { transform: translateY(2px); box-shadow: 0 1px 0 #7d2b07; }
   button:disabled { opacity: 0.35; cursor: default; }
-  .acciones { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+  .acciones { display: flex; gap: 10px; justify-content: center; margin-top: clamp(6px, 1.4vh, 14px); flex: 0 0 auto; }
   .acciones button {
-    padding: 10px 18px; border-radius: 10px; font-size: 14px;
+    padding: clamp(6px, 1.2vh, 10px) 16px; border-radius: 10px; font-size: 13px;
     border: 1px solid rgba(245,239,224,0.35); background: transparent;
     color: #F5EFE0; cursor: pointer; font-family: system-ui, sans-serif;
   }

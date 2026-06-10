@@ -10,7 +10,7 @@ const ARCHIVOS = [
   "./fondos/fondo2.jpg",
   "./fondos/fondo3.jpg",
   "./fondos/fondo4.jpg",
-  "./fondos/fondo5.jpg"
+  "./fondos/fondo5.jpg",
 ];
 
 self.addEventListener("install", (e) => {

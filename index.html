@@ -37,6 +37,13 @@
     border: 1px solid rgba(245,239,224,0.35); color: #F5EFE0;
     font-family: system-ui, sans-serif; letter-spacing: 0.04em;
   }
+  #btn-icono {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 34px; padding: 0; border-radius: 9px;
+    border: 1px solid rgba(245,239,224,0.35);
+    background: rgba(0,0,0,0.2); cursor: pointer;
+  }
+  #btn-icono:active { transform: scale(0.92); }
   .fase {
     flex: 0 0 auto; margin-top: 1px;
     font-size: clamp(9px, 1.4vh, 12px); letter-spacing: 0.22em; text-transform: uppercase;
@@ -167,7 +174,10 @@
       <h1>Truco</h1>
       <button id="btn-sonido" aria-label="Silenciar sonido">🔊</button>
     </div>
-    <div class="meta-30">a 30</div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button id="btn-icono" aria-label="Cambiar estilo de los puntos"></button>
+      <div class="meta-30">a 30</div>
+    </div>
   </header>
 
   <div class="tablero">
@@ -241,6 +251,7 @@
     historial: [],
     fondo: 0,
     silenciado: false,
+    icono: "fosforos",
   };
 
   try {
@@ -310,7 +321,17 @@
   });
   pintarBotonSonido();
 
-  // ---- Fósforos ----
+
+  // ===================================================================
+  //  ESTILOS DE MARCADOR (cómo se dibuja cada punto)
+  //  Los 5 trazos forman el clásico cuadrado con diagonal (5 puntos).
+  //  Para agregar un estilo nuevo:
+  //   1. Escribí una función dibujarXXX(m, anim) que devuelva el SVG de
+  //      UN marcador en la posición m (usa m.x1,m.y1,m.x2,m.y2 y la brasa/
+  //      cabeza en m.tx,m.ty).
+  //   2. Registralo en el objeto ESTILOS y sumá su clave a la lista ICONOS.
+  //  El selector del header lo toma automáticamente.
+  // ===================================================================
   const POSICIONES = [
     { x1: 10, y1: 10, x2: 10, y2: 58, tx: 10, ty: 12 },
     { x1: 10, y1: 10, x2: 58, y2: 10, tx: 56, ty: 10 },
@@ -319,17 +340,62 @@
     { x1: 14, y1: 54, x2: 54, y2: 14, tx: 52, ty: 16 },
   ];
 
-  function svgCuadro(cantidad, animarUltimo) {
+  function dist2(ax, ay, bx, by) { const dx = ax - bx, dy = ay - by; return dx * dx + dy * dy; }
+
+  // Estilo fósforo: palito de madera + cabeza roja
+  function dibujarFosforo(m, anim) {
+    const clase = anim ? ' class="nuevo-fosforo"' : "";
+    return '<g' + clase + '>' +
+      '<line x1="' + m.x1 + '" y1="' + m.y1 + '" x2="' + m.x2 + '" y2="' + m.y2 +
+      '" stroke="#E9C893" stroke-width="5" stroke-linecap="round"/>' +
+      '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="4.4" fill="#C1440E"/></g>';
+  }
+
+  // Estilo cigarro armado: papel crema, extremo retorcido y brasa encendida
+  function dibujarCigarro(m, anim) {
+    const clase = anim ? ' class="nuevo-fosforo"' : "";
+    // La "boca" es el extremo más lejano a la brasa (tx,ty)
+    const dA = dist2(m.x1, m.y1, m.tx, m.ty);
+    const dB = dist2(m.x2, m.y2, m.tx, m.ty);
+    const boca = dA > dB ? { x: m.x1, y: m.y1 } : { x: m.x2, y: m.y2 };
+    const otro = dA > dB ? { x: m.x2, y: m.y2 } : { x: m.x1, y: m.y1 };
+    const len = Math.hypot(otro.x - boca.x, otro.y - boca.y) || 1;
+    const ux = (otro.x - boca.x) / len, uy = (otro.y - boca.y) / len;
+    const twX = boca.x + ux * 8, twY = boca.y + uy * 8; // tramo del papel torcido
+    return '<g' + clase + '>' +
+      // cuerpo del cigarro (papel crema, un poco más grueso que el fósforo)
+      '<line x1="' + m.x1 + '" y1="' + m.y1 + '" x2="' + m.x2 + '" y2="' + m.y2 +
+      '" stroke="#F2ECD9" stroke-width="6" stroke-linecap="round"/>' +
+      // extremo retorcido (armado a mano), tono más tostado y más finito
+      '<line x1="' + boca.x + '" y1="' + boca.y + '" x2="' + twX.toFixed(1) + '" y2="' + twY.toFixed(1) +
+      '" stroke="#D9C58C" stroke-width="3.4" stroke-linecap="round"/>' +
+      // brasa encendida: resplandor + brasa + núcleo brillante
+      '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="5.6" fill="#E85D1A" opacity="0.35"/>' +
+      '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="3.8" fill="#D43A0A"/>' +
+      '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="1.9" fill="#FF9A2E"/></g>';
+  }
+
+  const ESTILOS = {
+    fosforos: dibujarFosforo,
+    cigarro: dibujarCigarro,
+  };
+  // Orden en que cicla el botón (sumá nuevas claves acá para habilitarlas)
+  const ICONOS = ["fosforos", "cigarro"];
+
+  function svgCuadro(cantidad, animarUltimo, estilo) {
+    const dibujar = ESTILOS[estilo] || ESTILOS.fosforos;
     let s = '<svg viewBox="0 0 68 68">';
     for (let i = 0; i < cantidad; i++) {
-      const m = POSICIONES[i];
-      const clase = animarUltimo && i === cantidad - 1 ? ' class="nuevo-fosforo"' : "";
-      s += '<g' + clase + '>' +
-        '<line x1="' + m.x1 + '" y1="' + m.y1 + '" x2="' + m.x2 + '" y2="' + m.y2 +
-        '" stroke="#E9C893" stroke-width="5" stroke-linecap="round"/>' +
-        '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="4.4" fill="#C1440E"/></g>';
+      s += dibujar(POSICIONES[i], animarUltimo && i === cantidad - 1);
     }
     return s + "</svg>";
+  }
+
+  // Mini muestra para el botón del header (un solo marcador en diagonal)
+  function svgIconoPreview(estilo) {
+    const dibujar = ESTILOS[estilo] || ESTILOS.fosforos;
+    return '<svg viewBox="0 0 68 68" width="24" height="24" style="display:block">' +
+      dibujar(POSICIONES[4], false) + '</svg>';
   }
 
   // ---- Render ----
@@ -354,7 +420,7 @@
       for (let g = 0; g < 3; g++) { // siempre 3 cuadros = 15 fosforitos
         const cant = Math.max(0, Math.min(5, visibles - g * 5));
         const esUltimoGrupo = (cant > 0 && cant < 5) || (cant === 5 && visibles === (g + 1) * 5);
-        html += '<div class="cuadro">' + svgCuadro(cant, equipoAnimado === e && esUltimoGrupo) + "</div>";
+        html += '<div class="cuadro">' + svgCuadro(cant, equipoAnimado === e && esUltimoGrupo, estado.icono) + "</div>";
       }
       cont.innerHTML = html;
 
@@ -418,6 +484,19 @@
   document.getElementById("nueva").addEventListener("click", nuevaPartida);
   document.getElementById("corregir").addEventListener("click", deshacer);
   document.getElementById("otra").addEventListener("click", nuevaPartida);
+
+  // ---- Selector de icono (estilo de los puntos) ----
+  if (ICONOS.indexOf(estado.icono) === -1) estado.icono = "fosforos";
+  const btnIcono = document.getElementById("btn-icono");
+  function pintarBotonIcono() { btnIcono.innerHTML = svgIconoPreview(estado.icono); }
+  btnIcono.addEventListener("click", () => {
+    const i = ICONOS.indexOf(estado.icono);
+    estado.icono = ICONOS[(i + 1) % ICONOS.length];
+    pintarBotonIcono();
+    render();
+    guardar();
+  });
+  pintarBotonIcono();
 
   for (let e = 0; e < 2; e++) {
     const input = document.getElementById("nombre" + e);

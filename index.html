@@ -32,13 +32,18 @@
   }
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: clamp(4px, 1vh, 10px); flex: 0 0 auto; }
   h1 { margin: 0; font-size: clamp(17px, 2.6vh, 22px); font-weight: 800; letter-spacing: 0.06em; }
-  .objetivos { display: flex; gap: 6px; }
-  .objetivos button {
+  .meta-30 {
     padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 700;
-    border: 1px solid rgba(245,239,224,0.35); background: transparent; color: #F5EFE0;
-    font-family: system-ui, sans-serif; cursor: pointer;
+    border: 1px solid rgba(245,239,224,0.35); color: #F5EFE0;
+    font-family: system-ui, sans-serif; letter-spacing: 0.04em;
   }
-  .objetivos button.activo { background: #F5EFE0; color: #143D2B; }
+  .fase {
+    flex: 0 0 auto; margin-top: 1px;
+    font-size: clamp(9px, 1.4vh, 12px); letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(245,239,224,0.65); font-family: system-ui, sans-serif;
+    transition: color 0.2s ease;
+  }
+  .fase.buenas { color: #E9C893; }
   .tablero { display: flex; gap: 10px; flex: 1 1 auto; min-height: 0; }
   .divisor { width: 1px; background: rgba(245,239,224,0.25); margin: clamp(28px, 7vh, 52px) 0 clamp(36px, 9vh, 70px); }
   .equipo { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; min-height: 0; }
@@ -69,13 +74,6 @@
     box-shadow: inset 0 1px 4px rgba(0,0,0,0.35); padding: 3px;
   }
   .cuadro svg { width: 100%; height: 100%; display: block; }
-  .sep-buenas {
-    flex: 0 0 auto; width: min(96px, 26vw);
-    display: flex; align-items: center; gap: 6px; margin: 1px 0;
-    color: rgba(245,239,224,0.55); font-size: clamp(8px, 1.2vh, 10px); letter-spacing: 0.18em;
-    text-transform: uppercase; font-family: system-ui, sans-serif;
-  }
-  .sep-buenas::before, .sep-buenas::after { content: ""; flex: 1; height: 1px; background: rgba(245,239,224,0.3); }
   .controles { display: flex; gap: 8px; margin-top: clamp(6px, 1.4vh, 14px); width: 100%; justify-content: center; flex: 0 0 auto; }
   .btn-menos {
     width: clamp(42px, 11vw, 48px); height: clamp(44px, 6.5vh, 56px); border-radius: 12px;
@@ -169,16 +167,14 @@
       <h1>Truco</h1>
       <button id="btn-sonido" aria-label="Silenciar sonido">🔊</button>
     </div>
-    <div class="objetivos">
-      <button id="obj15">a 15</button>
-      <button id="obj30" class="activo">a 30</button>
-    </div>
+    <div class="meta-30">a 30</div>
   </header>
 
   <div class="tablero">
     <div class="equipo" id="equipo0">
       <input id="nombre0" maxlength="12" value="Nosotros" aria-label="Nombre del equipo 1">
       <div class="puntaje" id="puntaje0">0</div>
+      <div class="fase" id="fase0">malas</div>
       <div class="cuadros" id="cuadros0"></div>
       <div class="controles">
         <button class="btn-menos" id="menos0" aria-label="Restar punto">−</button>
@@ -189,6 +185,7 @@
     <div class="equipo" id="equipo1">
       <input id="nombre1" maxlength="12" value="Ellos" aria-label="Nombre del equipo 2">
       <div class="puntaje" id="puntaje1">0</div>
+      <div class="fase" id="fase1">malas</div>
       <div class="cuadros" id="cuadros1"></div>
       <div class="controles">
         <button class="btn-menos" id="menos1" aria-label="Restar punto">−</button>
@@ -231,7 +228,7 @@
     "fondos/fondo1.jpg",   // barril de cerveza
     "fondos/fondo2.jpg",   // luz violeta
     "fondos/fondo3.jpg",   // sombrero / san lorenzo
-    "fondos/fondo4.jpg",   // <-- reemplazo futuro
+    // "fondos/fondo4.jpg",   // <-- reemplazo futuro
     // "fondos/fondo5.jpg",   // <-- reemplazo futuro
   ];
 
@@ -250,6 +247,7 @@
     const guardado = JSON.parse(localStorage.getItem(CLAVE));
     if (guardado && Array.isArray(guardado.puntos)) estado = Object.assign(estado, guardado);
   } catch (e) { /* estado por defecto */ }
+  estado.objetivo = 30; // el juego siempre es a 30, sin excepción
 
   function guardar() {
     try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) { /* sin espacio */ }
@@ -338,25 +336,30 @@
   let equipoAnimado = null;
 
   function render() {
-    document.getElementById("obj15").classList.toggle("activo", estado.objetivo === 15);
-    document.getElementById("obj30").classList.toggle("activo", estado.objetivo === 30);
-
     for (let e = 0; e < 2; e++) {
-      document.getElementById("puntaje" + e).textContent = estado.puntos[e];
+      const total = estado.puntos[e];
+      document.getElementById("puntaje" + e).textContent = total;
+
+      // El juego es a 30, pero los fosforitos se dibujan de a 15.
+      // Malas: 0 a 15. Buenas: 16 a 30, dibujadas de nuevo desde 1.
+      const enBuenas = total > 15;
+      const visibles = enBuenas ? total - 15 : total; // 0..15 que se muestran
+
+      const faseEl = document.getElementById("fase" + e);
+      faseEl.textContent = enBuenas ? "buenas" : "malas";
+      faseEl.classList.toggle("buenas", enBuenas);
+
       const cont = document.getElementById("cuadros" + e);
       let html = "";
-      const grupos = estado.objetivo / 5;
-      for (let g = 0; g < grupos; g++) {
-        const cant = Math.max(0, Math.min(5, estado.puntos[e] - g * 5));
-        const esUltimoGrupo = cant > 0 && cant < 5 || (cant === 5 && estado.puntos[e] === (g + 1) * 5);
+      for (let g = 0; g < 3; g++) { // siempre 3 cuadros = 15 fosforitos
+        const cant = Math.max(0, Math.min(5, visibles - g * 5));
+        const esUltimoGrupo = (cant > 0 && cant < 5) || (cant === 5 && visibles === (g + 1) * 5);
         html += '<div class="cuadro">' + svgCuadro(cant, equipoAnimado === e && esUltimoGrupo) + "</div>";
-        if (estado.objetivo === 30 && g === 2) {
-          html += '<div class="sep-buenas">buenas</div>';
-        }
       }
       cont.innerHTML = html;
-      document.getElementById("mas" + e).disabled = estado.puntos[e] >= estado.objetivo || hayGanador();
-      document.getElementById("menos" + e).disabled = estado.puntos[e] === 0;
+
+      document.getElementById("mas" + e).disabled = total >= 30 || hayGanador();
+      document.getElementById("menos" + e).disabled = total === 0;
     }
 
     document.getElementById("deshacer").disabled = estado.historial.length === 0;
@@ -375,8 +378,8 @@
   }
 
   function ganador() {
-    if (estado.puntos[0] >= estado.objetivo) return 0;
-    if (estado.puntos[1] >= estado.objetivo) return 1;
+    if (estado.puntos[0] >= 30) return 0;
+    if (estado.puntos[1] >= 30) return 1;
     return null;
   }
   function hayGanador() { return ganador() !== null; }
@@ -385,7 +388,7 @@
   function cambiar(equipo, delta) {
     estado.historial.push(estado.puntos.slice());
     if (estado.historial.length > 60) estado.historial.shift();
-    estado.puntos[equipo] = Math.max(0, Math.min(estado.objetivo, estado.puntos[equipo] + delta));
+    estado.puntos[equipo] = Math.max(0, Math.min(30, estado.puntos[equipo] + delta));
     equipoAnimado = delta > 0 ? equipo : null;
     if (delta > 0) {
       if (navigator.vibrate) navigator.vibrate(15);
@@ -406,12 +409,6 @@
     render();
   }
 
-  function cambiarObjetivo(n) {
-    if (estado.objetivo === n) return;
-    estado.objetivo = n;
-    nuevaPartida();
-  }
-
   // ---- Eventos ----
   document.getElementById("mas0").addEventListener("click", () => cambiar(0, 1));
   document.getElementById("menos0").addEventListener("click", () => cambiar(0, -1));
@@ -421,8 +418,6 @@
   document.getElementById("nueva").addEventListener("click", nuevaPartida);
   document.getElementById("corregir").addEventListener("click", deshacer);
   document.getElementById("otra").addEventListener("click", nuevaPartida);
-  document.getElementById("obj15").addEventListener("click", () => cambiarObjetivo(15));
-  document.getElementById("obj30").addEventListener("click", () => cambiarObjetivo(30));
 
   for (let e = 0; e < 2; e++) {
     const input = document.getElementById("nombre" + e);

@@ -1,4 +1,4 @@
-const CACHE = "truco-v4";
+const CACHE = "truco-v5";
 const ARCHIVOS = [
   "./",
   "./index.html",

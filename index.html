@@ -165,6 +165,10 @@
   <source src="sonidos/punto.m4a" type="audio/mp4">
   <source src="sonidos/punto.mp3" type="audio/mpeg">
 </audio>
+<audio id="audio-victoria" preload="auto">
+  <source src="sonidos/victoria.m4a" type="audio/mp4">
+  <source src="sonidos/victoria.mp3" type="audio/mpeg">
+</audio>
 <div id="capa-fondo"></div>
 <div id="capa-oscura"></div>
 <button id="btn-fondo" aria-label="Cambiar fondo">→</button>
@@ -298,7 +302,9 @@
 
   // ---- Sonido al sumar punto ----
   const audioPunto = document.getElementById("audio-punto");
+  const audioVictoria = document.getElementById("audio-victoria");
   const btnSonido = document.getElementById("btn-sonido");
+  let habiaGanador = false; // para sonar la victoria solo en la transición
 
   function pintarBotonSonido() {
     btnSonido.textContent = estado.silenciado ? "🔇" : "🔊";
@@ -311,6 +317,15 @@
     try {
       audioPunto.currentTime = 0;      // reiniciar por si suena rápido seguido
       audioPunto.play().catch(() => {}); // ignorar si el navegador lo bloquea
+    } catch (e) { /* sin audio */ }
+  }
+
+  function sonarVictoria() {
+    if (estado.silenciado) return;
+    try {
+      audioPunto.pause();              // cortar el sonido del punto que dispara la victoria
+      audioVictoria.currentTime = 0;
+      audioVictoria.play().catch(() => {});
     } catch (e) { /* sin audio */ }
   }
 
@@ -458,8 +473,12 @@
       document.getElementById("tituloGanador").textContent = "¡Ganó " + estado.nombres[g] + "!";
       document.getElementById("marcadorFinal").textContent = estado.puntos[0] + " — " + estado.puntos[1];
       velo.classList.remove("oculto");
+      // Sonar solo en la transición a ganador (no en cada redibujo)
+      if (!habiaGanador) sonarVictoria();
+      habiaGanador = true;
     } else {
       velo.classList.add("oculto");
+      habiaGanador = false;
     }
     equipoAnimado = null;
     guardar();
@@ -529,6 +548,8 @@
     });
   }
 
+  // Si la app abre con una partida ya ganada, no disparar el sonido al inicio
+  habiaGanador = ganador() !== null;
   render();
 
   // ---- Service worker (offline) ----

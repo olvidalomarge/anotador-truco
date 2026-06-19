@@ -1,4 +1,4 @@
-const CACHE = "truco-v8";
+const CACHE = "truco-v9";
 const ARCHIVOS = [
   "./",
   "./index.html",
@@ -10,7 +10,9 @@ const ARCHIVOS = [
   "./fondos/fondo2.jpg",
   "./fondos/fondo3.jpg",
   "./sonidos/punto.m4a",
-  "./sonidos/punto.mp3"
+  "./sonidos/punto.mp3",
+  "./sonidos/victoria.m4a",
+  "./sonidos/victoria.mp3"
 ];
 
 self.addEventListener("install", (e) => {

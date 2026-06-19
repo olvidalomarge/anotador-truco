@@ -76,7 +76,7 @@
   .cuadro {
     flex: 1 1 0; min-height: 0;
     aspect-ratio: 1; width: auto;
-    max-width: min(96px, 26vw); max-height: min(96px, 26vw);
+    max-width: min(132px, 34vw); max-height: min(132px, 34vw);
     border-radius: 10px; background: rgba(0,0,0,0.22);
     box-shadow: inset 0 1px 4px rgba(0,0,0,0.35); padding: 3px;
   }
@@ -351,28 +351,44 @@
       '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="4.4" fill="#C1440E"/></g>';
   }
 
-  // Estilo cigarro armado: papel crema, extremo retorcido y brasa encendida
+  // Estilo cigarro armado: cuerpo verde afinado, filtro crema en la base
+  // y punta retorcida encendida. Se dibuja en horizontal y se rota a su lugar.
   function dibujarCigarro(m, anim) {
     const clase = anim ? ' class="nuevo-fosforo"' : "";
-    // La "boca" es el extremo más lejano a la brasa (tx,ty)
+    // La punta (twist/brasa) es el extremo más cercano a (tx,ty); el filtro va en el otro.
     const dA = dist2(m.x1, m.y1, m.tx, m.ty);
     const dB = dist2(m.x2, m.y2, m.tx, m.ty);
-    const boca = dA > dB ? { x: m.x1, y: m.y1 } : { x: m.x2, y: m.y2 };
-    const otro = dA > dB ? { x: m.x2, y: m.y2 } : { x: m.x1, y: m.y1 };
-    const len = Math.hypot(otro.x - boca.x, otro.y - boca.y) || 1;
-    const ux = (otro.x - boca.x) / len, uy = (otro.y - boca.y) / len;
-    const twX = boca.x + ux * 8, twY = boca.y + uy * 8; // tramo del papel torcido
-    return '<g' + clase + '>' +
-      // cuerpo del cigarro (papel crema, un poco más grueso que el fósforo)
-      '<line x1="' + m.x1 + '" y1="' + m.y1 + '" x2="' + m.x2 + '" y2="' + m.y2 +
-      '" stroke="#F2ECD9" stroke-width="6" stroke-linecap="round"/>' +
-      // extremo retorcido (armado a mano), tono más tostado y más finito
-      '<line x1="' + boca.x + '" y1="' + boca.y + '" x2="' + twX.toFixed(1) + '" y2="' + twY.toFixed(1) +
-      '" stroke="#D9C58C" stroke-width="3.4" stroke-linecap="round"/>' +
-      // brasa encendida: resplandor + brasa + núcleo brillante
-      '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="5.6" fill="#E85D1A" opacity="0.35"/>' +
-      '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="3.8" fill="#D43A0A"/>' +
-      '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="1.9" fill="#FF9A2E"/></g>';
+    const tip = dA < dB ? { x: m.x1, y: m.y1 } : { x: m.x2, y: m.y2 };
+    const fil = dA < dB ? { x: m.x2, y: m.y2 } : { x: m.x1, y: m.y1 };
+    const L = Math.hypot(tip.x - fil.x, tip.y - fil.y) || 1;
+    const ang = (Math.atan2(tip.y - fil.y, tip.x - fil.x) * 180 / Math.PI).toFixed(1);
+
+    const fl = 10;     // largo del filtro (boquilla)
+    const hw = 4.3;    // semi-ancho del cuerpo en la base
+    const b = fl;      // donde arranca el cuerpo verde
+    // Cuerpo verde afinándose desde el filtro hasta una punta retorcida
+    const cuerpo = 'M ' + b + ' ' + (-hw) +
+      ' C ' + (b + L * 0.4) + ' ' + (-hw - 0.6) + ' ' + (L - 6) + ' ' + (-1.4) + ' ' + (L - 1) + ' ' + (-0.5) +
+      ' L ' + L + ' 0' +
+      ' L ' + (L - 1) + ' 0.5' +
+      ' C ' + (L - 6) + ' 1.4 ' + (b + L * 0.4) + ' ' + (hw + 0.6) + ' ' + b + ' ' + hw + ' Z';
+    // Un par de venas suaves de la hoja
+    const vena1 = 'M ' + (b + 4) + ' -1 Q ' + (L * 0.5) + ' -2 ' + (L - 8) + ' -0.6';
+    const vena2 = 'M ' + (b + 6) + ' 1.4 Q ' + (L * 0.55) + ' 2.2 ' + (L - 9) + ' 0.8';
+
+    return '<g' + clase + ' transform="translate(' + fil.x + ' ' + fil.y + ') rotate(' + ang + ')">' +
+      // filtro crema con borde
+      '<rect x="-0.5" y="' + (-hw + 0.3) + '" width="' + (fl + 2) + '" height="' + (hw * 2 - 0.6) + '" rx="2" fill="#EAE3C6" stroke="#C7BB8C" stroke-width="0.9"/>' +
+      // cuerpo verde con contorno tipo dibujo
+      '<path d="' + cuerpo + '" fill="#8CA95C" stroke="#5C7B38" stroke-width="1.5" stroke-linejoin="round"/>' +
+      // venas
+      '<path d="' + vena1 + '" stroke="#6B8C43" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.75"/>' +
+      '<path d="' + vena2 + '" stroke="#6B8C43" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.6"/>' +
+      // brasa encendida en la punta
+      '<circle cx="' + (L - 0.5) + '" cy="0" r="3.2" fill="#E85D1A" opacity="0.35"/>' +
+      '<circle cx="' + (L - 1) + '" cy="0" r="1.7" fill="#D43A0A"/>' +
+      '<circle cx="' + (L - 1) + '" cy="0" r="0.8" fill="#FF9A2E"/>' +
+      '</g>';
   }
 
   const ESTILOS = {

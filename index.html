@@ -351,11 +351,10 @@
       '<circle cx="' + m.tx + '" cy="' + m.ty + '" r="4.4" fill="#C1440E"/></g>';
   }
 
-  // Estilo cigarro armado: cuerpo verde afinado, filtro crema en la base
-  // y punta retorcida encendida. Se dibuja en horizontal y se rota a su lugar.
+  // Estilo cigarro armado: filtro crema FINO en la base que se ensancha
+  // hacia la punta encendida (brasa). Se dibuja en horizontal y se rota.
   function dibujarCigarro(m, anim) {
-    const clase = anim ? ' class="nuevo-fosforo"' : "";
-    // La punta (twist/brasa) es el extremo más cercano a (tx,ty); el filtro va en el otro.
+    // La punta (brasa) es el extremo más cercano a (tx,ty); el filtro va en el otro.
     const dA = dist2(m.x1, m.y1, m.tx, m.ty);
     const dB = dist2(m.x2, m.y2, m.tx, m.ty);
     const tip = dA < dB ? { x: m.x1, y: m.y1 } : { x: m.x2, y: m.y2 };
@@ -363,32 +362,39 @@
     const L = Math.hypot(tip.x - fil.x, tip.y - fil.y) || 1;
     const ang = (Math.atan2(tip.y - fil.y, tip.x - fil.x) * 180 / Math.PI).toFixed(1);
 
-    const fl = 10;     // largo del filtro (boquilla)
-    const hw = 4.3;    // semi-ancho del cuerpo en la base
-    const b = fl;      // donde arranca el cuerpo verde
-    // Cuerpo verde afinándose desde el filtro hasta una punta retorcida
-    const cuerpo = 'M ' + b + ' ' + (-hw) +
-      ' C ' + (b + L * 0.4) + ' ' + (-hw - 0.6) + ' ' + (L - 6) + ' ' + (-1.4) + ' ' + (L - 1) + ' ' + (-0.5) +
-      ' L ' + L + ' 0' +
-      ' L ' + (L - 1) + ' 0.5' +
-      ' C ' + (L - 6) + ' 1.4 ' + (b + L * 0.4) + ' ' + (hw + 0.6) + ' ' + b + ' ' + hw + ' Z';
-    // Un par de venas suaves de la hoja
-    const vena1 = 'M ' + (b + 4) + ' -1 Q ' + (L * 0.5) + ' -2 ' + (L - 8) + ' -0.6';
-    const vena2 = 'M ' + (b + 6) + ' 1.4 Q ' + (L * 0.55) + ' 2.2 ' + (L - 9) + ' 0.8';
+    const fl = 9;      // largo del filtro (boquilla), parte fina
+    const hwF = 2.3;   // semi-ancho fino (en el filtro)
+    const hwT = 4.8;   // semi-ancho ancho (en la punta encendida)
+    const span = L - fl;
+    // Cuerpo verde que va de fino (filtro) a ancho (punta redondeada)
+    const cuerpo =
+      'M ' + fl + ' ' + (-hwF) +
+      ' Q ' + (fl + span * 0.5) + ' ' + (-hwT * 0.92) + ' ' + (L - 1) + ' ' + (-hwT) +
+      ' Q ' + L + ' ' + (-hwT) + ' ' + L + ' 0' +
+      ' Q ' + L + ' ' + hwT + ' ' + (L - 1) + ' ' + hwT +
+      ' Q ' + (fl + span * 0.5) + ' ' + (hwT * 0.92) + ' ' + fl + ' ' + hwF + ' Z';
+    const vena1 = 'M ' + (fl + 3) + ' ' + (-hwF * 0.3) + ' Q ' + (fl + span * 0.5) + ' ' + (-hwT * 0.4) + ' ' + (L - 5) + ' ' + (-hwT * 0.45);
+    const vena2 = 'M ' + (fl + 4) + ' ' + (hwF * 0.3) + ' Q ' + (fl + span * 0.55) + ' ' + (hwT * 0.4) + ' ' + (L - 6) + ' ' + (hwT * 0.4);
 
-    return '<g' + clase + ' transform="translate(' + fil.x + ' ' + fil.y + ') rotate(' + ang + ')">' +
-      // filtro crema con borde
-      '<rect x="-0.5" y="' + (-hw + 0.3) + '" width="' + (fl + 2) + '" height="' + (hw * 2 - 0.6) + '" rx="2" fill="#EAE3C6" stroke="#C7BB8C" stroke-width="0.9"/>' +
-      // cuerpo verde con contorno tipo dibujo
+    const inner =
+      // filtro crema fino
+      '<rect x="-0.5" y="' + (-hwF) + '" width="' + (fl + 1.5) + '" height="' + (hwF * 2) + '" rx="1.4" fill="#EAE3C6" stroke="#C7BB8C" stroke-width="0.8"/>' +
+      // cuerpo verde ensanchándose con contorno
       '<path d="' + cuerpo + '" fill="#8CA95C" stroke="#5C7B38" stroke-width="1.5" stroke-linejoin="round"/>' +
-      // venas
-      '<path d="' + vena1 + '" stroke="#6B8C43" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.75"/>' +
-      '<path d="' + vena2 + '" stroke="#6B8C43" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.6"/>' +
-      // brasa encendida en la punta
-      '<circle cx="' + (L - 0.5) + '" cy="0" r="3.2" fill="#E85D1A" opacity="0.35"/>' +
-      '<circle cx="' + (L - 1) + '" cy="0" r="1.7" fill="#D43A0A"/>' +
-      '<circle cx="' + (L - 1) + '" cy="0" r="0.8" fill="#FF9A2E"/>' +
-      '</g>';
+      // venas suaves
+      '<path d="' + vena1 + '" stroke="#6B8C43" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.7"/>' +
+      '<path d="' + vena2 + '" stroke="#6B8C43" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.55"/>' +
+      // brasa encendida en la punta ancha
+      '<circle cx="' + (L - 1.5) + '" cy="0" r="' + (hwT * 0.95).toFixed(2) + '" fill="#E85D1A" opacity="0.4"/>' +
+      '<circle cx="' + (L - 1.5) + '" cy="0" r="' + (hwT * 0.58).toFixed(2) + '" fill="#D43A0A"/>' +
+      '<circle cx="' + (L - 1.5) + '" cy="0" r="' + (hwT * 0.3).toFixed(2) + '" fill="#FF9A2E"/>';
+
+    // La animación de aparición va en un grupo INTERNO para no pisar
+    // el transform de posición del grupo externo (ese era el bug al sumar).
+    const contenido = anim
+      ? '<g class="nuevo-fosforo" style="transform-box:fill-box;transform-origin:center">' + inner + '</g>'
+      : inner;
+    return '<g transform="translate(' + fil.x + ' ' + fil.y + ') rotate(' + ang + ')">' + contenido + '</g>';
   }
 
   const ESTILOS = {

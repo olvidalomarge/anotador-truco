@@ -1,4 +1,7 @@
-const CACHE = "truco-v11";
+const CACHE = "truco-v12";
+// Los fondos NO se listan acá: la lista es dinámica (carpeta "fondos/") y
+// se cachean solos la primera vez que se muestran. Si se listara un archivo
+// que ya no existe, la instalación del service worker fallaría entera.
 const ARCHIVOS = [
   "./",
   "./index.html",
@@ -6,9 +9,6 @@ const ARCHIVOS = [
   "./icon-192.png",
   "./icon-512.png",
   "./icon-512-maskable.png",
-  "./fondos/fondo1.jpg",
-  "./fondos/fondo2.jpg",
-  "./fondos/fondo3.jpg",
   "./sonidos/punto.m4a",
   "./sonidos/punto.mp3",
   "./sonidos/victoria.m4a",

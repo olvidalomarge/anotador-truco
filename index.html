@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Anotador de Truco</title>
+<title>Anotador</title>
 <meta name="description" content="Anotador de puntos para el truco argentino, con fosforitos.">
 <meta name="theme-color" content="#143D2B">
 <link rel="manifest" href="manifest.webmanifest">
@@ -169,7 +169,7 @@
   }
   .home-logo svg { width: 100%; height: 100%; display: block; }
   .home-titulo {
-    font-size: clamp(38px, 7vh, 52px); font-weight: 800; letter-spacing: 0.06em;
+    font-size: clamp(30px, 6vh, 44px); font-weight: 800; letter-spacing: 0.05em;
     margin-top: 14px; text-shadow: 0 2px 6px rgba(0,0,0,0.4);
   }
   .home-sub {
@@ -213,7 +213,7 @@
 <div class="contenedor">
   <header>
     <div style="display: flex; align-items: center; gap: 4px;">
-      <h1>Truco</h1>
+      <h1>Anotador</h1>
       <button id="btn-sonido" aria-label="Silenciar sonido">🔊</button>
     </div>
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -256,8 +256,8 @@
 <div id="home">
   <div class="home-inner">
     <div class="home-logo" id="home-logo" aria-hidden="true"></div>
-    <div class="home-titulo">Truco</div>
-    <div class="home-sub">Anotador &middot; a 30 &middot; con fosforitos</div>
+    <div class="home-titulo">Anotador</div>
+    <div class="home-sub">Truco &middot; a 30 &middot; con fosforitos</div>
     <div class="home-botones">
       <button id="btn-publica" class="home-btn home-publica">Versión Pública</button>
       <button id="btn-maxpawer" class="home-btn home-maxpawer">⚡ Versión MAX PAWER</button>
@@ -281,21 +281,27 @@
 (function () {
   // ===================================================================
   //  FONDOS DE PANTALLA
-  //  Para agregar o reemplazar un fondo:
-  //   1. Poné la imagen (vertical, idealmente ~900x1600) en la carpeta "fondos/".
-  //   2. Sumá su nombre de archivo a esta lista.
-  //  El selector toma la lista automáticamente, no hace falta tocar nada más.
-  //
-  //  Quedan 2 lugares libres para cuando tengas las imágenes de reemplazo:
-  //  descomentá las líneas y poné el nombre real del archivo.
+  //  La lista se arma SOLA: al abrir la página se consulta la carpeta
+  //  "fondos/" del repositorio (API pública de GitHub) y se usan todas las
+  //  imágenes que haya (jpg, jpeg, png, webp, gif, avif).
+  //  → Para agregar o sacar un fondo alcanza con subir o borrar la imagen
+  //    en la carpeta "fondos/". NO hay que tocar este archivo.
+  //  → Van en orden alfabético: para controlar el orden, nombralas
+  //    01-barril.jpg, 02-luces.jpg, etc.
+  //  La última lista descubierta queda guardada en el dispositivo. Esta de
+  //  acá abajo es solo el respaldo para la primera vez sin conexión:
   // ===================================================================
-  const FONDOS = [
-    "fondos/fondo1.jpg",   // barril de cerveza
-    "fondos/fondo2.jpg",   // luz violeta
-    "fondos/fondo3.jpg",   // sombrero / san lorenzo
-    // "fondos/fondo4.jpg",   // <-- reemplazo futuro
-    // "fondos/fondo5.jpg",   // <-- reemplazo futuro
+  const FONDOS_RESPALDO = [
+    "fondos/fondo1.jpg",
+    "fondos/fondo2.jpg",
+    "fondos/fondo3.jpg",
   ];
+  const CLAVE_FONDOS = "anotador-truco-fondos";
+  let FONDOS = FONDOS_RESPALDO.slice();
+  try {
+    const lista = JSON.parse(localStorage.getItem(CLAVE_FONDOS));
+    if (Array.isArray(lista) && lista.length) FONDOS = lista;
+  } catch (e) { /* se queda el respaldo */ }
 
   // ---- Estado ----
   const CLAVE = "anotador-truco-v1";
@@ -328,7 +334,7 @@
   //   - Link secreto para compartir:  https://TU-PAGINA/#clave=fosforito
   //     (desbloquea y entra directo a MAX PAWER, sin pasar por el home)
   //   - Salir y olvidar la clave en el dispositivo: tocar 5 veces seguidas
-  //     el título "Truco" estando en MAX PAWER.
+  //     el título "Anotador" estando en MAX PAWER.
   //
   //  Clave actual: "fosforito" (en minúsculas; espacios y mayúsculas se ignoran)
   //  Para cambiarla: abrí la consola del navegador (F12) en la página y corré
@@ -648,6 +654,33 @@
     render();
   }
 
+  // ---- Descubrir los fondos de la carpeta "fondos/" del repo ----
+  // Deduce usuario y repo desde la URL de GitHub Pages
+  // (usuario.github.io/repo). Fuera de GitHub Pages (pruebas locales,
+  // dominio propio) no hace nada y se usa la última lista conocida.
+  function descubrirFondos() {
+    const m = location.hostname.match(/^([^.]+)\.github\.io$/i);
+    if (!m) return;
+    const usuario = m[1];
+    const repo = location.pathname.split("/")[1] || (usuario + ".github.io");
+    const url = "https://api.github.com/repos/" + usuario + "/" + repo + "/contents/fondos";
+    fetch(url, { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((archivos) => {
+        const imgs = archivos
+          .filter((a) => a.type === "file" && /\.(jpe?g|png|webp|gif|avif)$/i.test(a.name))
+          .map((a) => "fondos/" + a.name)
+          .sort();
+        if (imgs.length === 0 || JSON.stringify(imgs) === JSON.stringify(FONDOS)) return;
+        FONDOS = imgs;
+        try { localStorage.setItem(CLAVE_FONDOS, JSON.stringify(imgs)); } catch (e) { /* sin espacio */ }
+        if (estado.fondo >= FONDOS.length) estado.fondo = 0;
+        aplicarModo(); // refresca el fondo actual y la visibilidad del botón →
+      })
+      .catch(() => { /* sin red o sin carpeta: se sigue con la lista conocida */ });
+  }
+  descubrirFondos();
+
   // ---- Home ----
   const home = document.getElementById("home");
   // El logo del home es el mismo cuadradito de 5 fosforitos del tablero
@@ -691,7 +724,7 @@
     }).catch(() => { /* sin crypto */ });
   }
 
-  // 5 toques seguidos en el título "Truco" estando en MAX PAWER: salir y
+  // 5 toques seguidos en el título "Anotador" estando en MAX PAWER: salir y
   // olvidar la clave en este dispositivo (para volver, la pide de nuevo).
   const tituloApp = document.querySelector("h1");
   let toquesTitulo = 0;

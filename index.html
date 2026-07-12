@@ -175,7 +175,7 @@
 <div class="contenedor">
   <header>
     <div style="display: flex; align-items: center; gap: 4px;">
-      <h1>Envido pico y truco</h1>
+      <h1>Truco</h1>
       <button id="btn-sonido" aria-label="Silenciar sonido">🔊</button>
     </div>
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -242,10 +242,8 @@
     "fondos/fondo1.jpg",   // barril de cerveza
     "fondos/fondo2.jpg",   // luz violeta
     "fondos/fondo3.jpg",   // sombrero / san lorenzo
-    "fondos/fondo4.jpg",   // <-- reemplazo futuro
-    "fondos/fondo5.jpg",
-    "fondos/fondo6.jpg",
-    "fondos/fondo7.jpg"// <-- reemplazo futuro
+    // "fondos/fondo4.jpg",   // <-- reemplazo futuro
+    // "fondos/fondo5.jpg",   // <-- reemplazo futuro
   ];
 
   // ---- Estado ----
@@ -265,6 +263,36 @@
     if (guardado && Array.isArray(guardado.puntos)) estado = Object.assign(estado, guardado);
   } catch (e) { /* estado por defecto */ }
   estado.objetivo = 30; // el juego siempre es a 30, sin excepción
+
+  // ===================================================================
+  //  MODO PRIVADO
+  //  La versión pública (la que ve cualquiera que entre a la página) es
+  //  el anotador pelado: fondo liso, sin sonidos, solo fosforitos.
+  //  El modo privado desbloquea los fondos, el sonido y el estilo cigarro.
+  //
+  //  Cómo se activa (queda guardado en el dispositivo hasta salir):
+  //   - Link secreto para compartir:  https://TU-PAGINA/#clave=fosforito
+  //   - A mano: tocar 5 veces seguidas el título "Truco" y escribir la clave.
+  //   - Para salir: tocar 5 veces el título estando en modo privado.
+  //
+  //  Clave actual: "fosforito" (en minúsculas; espacios y mayúsculas se ignoran)
+  //  Para cambiarla: abrí la consola del navegador (F12) en la página y corré
+  //    crypto.subtle.digest("SHA-256", new TextEncoder().encode("nueva-clave"))
+  //      .then(b => console.log([...new Uint8Array(b)].map(x => x.toString(16).padStart(2,"0")).join("")))
+  //  y pegá el resultado acá abajo. Se guarda el hash y no la clave para que
+  //  no se pueda leer directo en el código fuente de la página.
+  // ===================================================================
+  const CLAVE_PRIVADA_HASH = "74ac30e3384867283d58bdadbf94baee506e2d50a14b96ac5ab6f4fabc8c2b7e";
+  const CLAVE_MODO = "anotador-truco-privado";
+  let modoPrivado = false;
+  try { modoPrivado = localStorage.getItem(CLAVE_MODO) === "1"; } catch (e) { /* sin storage */ }
+
+  function sha256Hex(texto) {
+    const datos = new TextEncoder().encode(texto.trim().toLowerCase());
+    return crypto.subtle.digest("SHA-256", datos).then((buf) =>
+      Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("")
+    );
+  }
 
   function guardar() {
     try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) { /* sin espacio */ }
@@ -296,11 +324,7 @@
   }
 
   btnFondo.addEventListener("click", siguienteFondo);
-  if (FONDOS.length <= 1) btnFondo.classList.add("oculto");
-  // Aplicar el fondo guardado al abrir (sin transición la primera vez)
-  if (FONDOS.length > 0) {
-    capaFondo.style.backgroundImage = 'url("' + FONDOS[estado.fondo % FONDOS.length] + '")';
-  }
+  // El fondo inicial lo aplica aplicarModo() al final, según el modo activo.
 
   // ---- Sonido al sumar punto ----
   const audioPunto = document.getElementById("audio-punto");
@@ -315,7 +339,7 @@
   }
 
   function sonarPunto() {
-    if (estado.silenciado) return;
+    if (!modoPrivado || estado.silenciado) return;
     try {
       audioPunto.currentTime = 0;      // reiniciar por si suena rápido seguido
       audioPunto.play().catch(() => {}); // ignorar si el navegador lo bloquea
@@ -323,7 +347,7 @@
   }
 
   function sonarVictoria() {
-    if (estado.silenciado) return;
+    if (!modoPrivado || estado.silenciado) return;
     try {
       audioPunto.pause();              // cortar el sonido del punto que dispara la victoria
       audioVictoria.currentTime = 0;
@@ -441,6 +465,8 @@
   let equipoAnimado = null;
 
   function render() {
+    // En la versión pública siempre se dibujan fosforitos (sin estilo cigarro)
+    const estiloActual = modoPrivado ? estado.icono : "fosforos";
     for (let e = 0; e < 2; e++) {
       const total = estado.puntos[e];
       document.getElementById("puntaje" + e).textContent = total;
@@ -459,7 +485,7 @@
       for (let g = 0; g < 3; g++) { // siempre 3 cuadros = 15 fosforitos
         const cant = Math.max(0, Math.min(5, visibles - g * 5));
         const esUltimoGrupo = (cant > 0 && cant < 5) || (cant === 5 && visibles === (g + 1) * 5);
-        html += '<div class="cuadro">' + svgCuadro(cant, equipoAnimado === e && esUltimoGrupo, estado.icono) + "</div>";
+        html += '<div class="cuadro">' + svgCuadro(cant, equipoAnimado === e && esUltimoGrupo, estiloActual) + "</div>";
       }
       cont.innerHTML = html;
 
@@ -550,9 +576,68 @@
     });
   }
 
+  // ---- Modo privado: aplicar y activar ----
+  function aplicarModo() {
+    btnFondo.classList.toggle("oculto", !modoPrivado || FONDOS.length <= 1);
+    btnSonido.classList.toggle("oculto", !modoPrivado);
+    btnIcono.classList.toggle("oculto", !modoPrivado);
+    if (modoPrivado && FONDOS.length > 0) {
+      if (estado.fondo >= FONDOS.length) estado.fondo = 0;
+      capaFondo.style.backgroundImage = 'url("' + FONDOS[estado.fondo] + '")';
+    } else {
+      capaFondo.style.backgroundImage = "none";
+    }
+    render();
+  }
+
+  function entrarModoPrivado() {
+    modoPrivado = true;
+    try { localStorage.setItem(CLAVE_MODO, "1"); } catch (e) { /* sin storage */ }
+    aplicarModo();
+  }
+
+  function salirModoPrivado() {
+    modoPrivado = false;
+    try { localStorage.removeItem(CLAVE_MODO); } catch (e) { /* sin storage */ }
+    aplicarModo();
+  }
+
+  // Activación por link secreto: https://TU-PAGINA/#clave=LA-CLAVE
+  // Se borra la clave de la barra de direcciones apenas se lee.
+  const claveEnLink = (location.hash.match(/^#clave=(.+)$/) || [])[1];
+  if (claveEnLink) {
+    history.replaceState(null, "", location.pathname + location.search);
+    sha256Hex(decodeURIComponent(claveEnLink)).then((h) => {
+      if (h === CLAVE_PRIVADA_HASH) entrarModoPrivado();
+    }).catch(() => { /* sin crypto */ });
+  }
+
+  // Activación a mano: 5 toques seguidos en el título "Truco".
+  // En modo privado, los mismos 5 toques ofrecen volver a la versión pública.
+  const tituloApp = document.querySelector("h1");
+  let toquesTitulo = 0;
+  let timerToques = null;
+  tituloApp.addEventListener("click", () => {
+    clearTimeout(timerToques);
+    timerToques = setTimeout(() => { toquesTitulo = 0; }, 1600);
+    toquesTitulo++;
+    if (toquesTitulo < 5) return;
+    toquesTitulo = 0;
+    if (modoPrivado) {
+      if (confirm("¿Volver a la versión pública?")) salirModoPrivado();
+      return;
+    }
+    const clave = prompt("Clave:");
+    if (!clave) return;
+    sha256Hex(clave).then((h) => {
+      if (h === CLAVE_PRIVADA_HASH) entrarModoPrivado();
+      else alert("Clave incorrecta");
+    }).catch(() => { /* sin crypto */ });
+  });
+
   // Si la app abre con una partida ya ganada, no disparar el sonido al inicio
   habiaGanador = ganador() !== null;
-  render();
+  aplicarModo();
 
   // ---- Service worker (offline) ----
   if ("serviceWorker" in navigator) {

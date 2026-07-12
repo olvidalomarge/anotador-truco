@@ -1,4 +1,4 @@
-const CACHE = "truco-v9";
+const CACHE = "truco-v10";
 const ARCHIVOS = [
   "./",
   "./index.html",
@@ -29,11 +29,16 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
-// Estrategia: red primero, cache como respaldo (así las actualizaciones llegan rápido)
+// Estrategia: red primero, cache como respaldo (así las actualizaciones llegan rápido).
+// Al abrir la página (navegación) se saltea también el caché HTTP del navegador,
+// para que la versión nueva llegue apenas se publica y no 10 minutos después.
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  const pedido = e.request.mode === "navigate"
+    ? fetch(e.request.url, { cache: "no-cache" })
+    : fetch(e.request);
   e.respondWith(
-    fetch(e.request)
+    pedido
       .then((resp) => {
         const copia = resp.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copia));

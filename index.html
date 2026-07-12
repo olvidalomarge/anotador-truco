@@ -639,10 +639,31 @@
   habiaGanador = ganador() !== null;
   aplicarModo();
 
-  // ---- Service worker (offline) ----
+  // ---- Service worker (offline + auto-actualización) ----
+  // Además de registrarlo, se busca una versión nueva al abrir y cada vez que
+  // la app vuelve al frente. Cuando el service worker nuevo toma el control
+  // (cambia CACHE en sw.js), la página se recarga sola una vez, así todos ven
+  // la última versión sin tener que refrescar a mano. El puntaje no se pierde
+  // porque queda guardado en localStorage.
   if ("serviceWorker" in navigator) {
+    // Si la página ya estaba controlada, un cambio de controlador = versión nueva.
+    // Si no (primera visita), el service worker recién instalado toma control
+    // con clients.claim() y NO hay que recargar.
+    let estabaControlada = !!navigator.serviceWorker.controller;
+    let yaRecargo = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!estabaControlada) { estabaControlada = true; return; }
+      if (yaRecargo) return;
+      yaRecargo = true;
+      location.reload();
+    });
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => { /* sin offline */ });
+      navigator.serviceWorker.register("sw.js").then((reg) => {
+        reg.update().catch(() => { /* sin red */ });
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") reg.update().catch(() => {});
+        });
+      }).catch(() => { /* sin offline */ });
     });
   }
 })();
